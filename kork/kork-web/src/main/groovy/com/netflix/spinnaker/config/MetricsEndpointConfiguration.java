@@ -40,7 +40,7 @@ public class MetricsEndpointConfiguration {
     http.securityMatcher(new AntPathRequestMatcher("/spectator/metrics"));
     http.authorizeHttpRequests()
         .requestMatchers(new AntPathRequestMatcher("/spectator/metrics"))
-        .permitAll()
+       .permitAll()
         .anyRequest()
         .authenticated();
     return http.build();

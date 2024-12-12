@@ -44,6 +44,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+<<<<<<< HEAD:kork/kork-retrofit/src/test/java/com/netflix/spinnaker/kork/retrofit/exceptions/SpinnakerRetrofitExceptionHandlersTest.java
+=======
+import org.springframework.test.context.TestPropertySource;
+>>>>>>> refactor(spring-security): refactor spring security  from 5.x to 6.x with spring boot upgrade to 3.x:kork-retrofit/src/test/java/com/netflix/spinnaker/kork/retrofit/exceptions/SpinnakerRetrofitExceptionHandlersTest.java
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
