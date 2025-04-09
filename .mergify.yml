@@ -1,0 +1,7 @@
+pull_request_rules:
+  - name: Test rule only
+    conditions:
+      - base=main
+    actions:
+      comment:
+        message: "✅ Mergify rule matched successfully!"
