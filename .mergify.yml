@@ -1,10 +1,8 @@
+queue_rules:
+  - name: default
+    merge_method: squash
+
 pull_request_rules:
-  - name: Test rule only
-    conditions:
-      - base=main
-    actions:
-      comment:
-        message: "✅ Mergify rule matched successfully!"
   - name: Automatically merge on CI success and review
     conditions:
       - base=main
