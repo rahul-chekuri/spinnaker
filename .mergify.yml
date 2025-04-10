@@ -8,7 +8,6 @@ queue_rules:
   - name: no-squash-queue
     merge_method: merge
     queue_conditions:
-      - label=no-squash
       - check-success=build
       - check-success=it-test
 
