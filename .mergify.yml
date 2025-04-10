@@ -43,3 +43,9 @@ pull_request_rules:
         name: default
       label:
         add: ["auto squash merged"]
+
+priority_rules:
+  - name: priority for queue `default`
+    conditions:
+      - queue-name=default
+    priority: 2250
