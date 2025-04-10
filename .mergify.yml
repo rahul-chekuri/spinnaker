@@ -5,12 +5,6 @@ queue_rules:
       - check-success=build
       - check-success=it-test
 
-  - name: no-squash-queue
-    merge_method: merge
-    queue_conditions:
-      - check-success=build
-      - check-success=it-test
-
 pull_request_rules:
   - name: Make sure PRs are up to date before merging
     description: This automatically updates PRs when they are out-of-date with the base branch.
@@ -36,7 +30,7 @@ pull_request_rules:
       - "#approved-reviews-by>=1"
     actions:
       queue:
-        name: no-squash-queue
+        name: default
       label:
         add: ["auto merged"]
 
@@ -49,4 +43,4 @@ pull_request_rules:
       queue:
         name: default
       label:
-        add: ["auto merged"]
+        add: ["auto squash merged"]
