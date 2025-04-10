@@ -5,3 +5,13 @@ pull_request_rules:
     actions:
       comment:
         message: "✅ Mergify rule matched successfully!"
+  - name: Automatically merge on CI success and review
+    conditions:
+      - base=main
+      - "label=ready to merge"
+      - "#approved-reviews-by>=1"
+    actions:
+      queue:
+        name: default
+      label:
+        add: ["auto merged"]
