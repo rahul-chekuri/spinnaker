@@ -2,8 +2,6 @@
 
 This document describes the flow of the release process, how all artifacts are versioned, and how those artifacts are assembled into a release.
 
-
-
 ## Performing a Release
 
 1. Go to the Github Actions UI and select the `Spinnaker Release` action
