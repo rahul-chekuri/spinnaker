@@ -34,7 +34,6 @@ pull_request_rules:
     conditions:
       - base=main
       - label=ready to merge
-      - label=no-squash
       - "#approved-reviews-by>=1"
     actions:
       queue:
@@ -45,8 +44,7 @@ pull_request_rules:
   - name: Automatically merge on CI success and review (default squash)
     conditions:
       - base=main
-      - label=ready to merge
-      - -label=no-squash
+      - label=ready to squash merge
       - "#approved-reviews-by>=1"
     actions:
       queue:
