@@ -1,7 +1,5 @@
 # Monorepo Adoption Steps
 
-
-
 ## Creation
 
 ### Setup `spinnaker/spinnaker` Repository
