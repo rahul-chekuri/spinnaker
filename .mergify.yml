@@ -50,22 +50,45 @@ pull_request_rules:
       label:
         add: ["auto merged"]
 
-  - name: Automatically merge release branch changes on CI success and release manager review
+  - name: Automatically merge release branch changes on CI success and release manager review (no-squash)
     conditions:
       - base~=^release-
       - label=ready to merge
-      - approved-reviews-by=@release-managers
+      - label=no-squash
+    actions:
+      queue:
+        name: no-squash-queue
+      label:
+        add: ["auto merged"]
+
+  - name: Automatically merge release branch changes on CI success and release manager review (default squash)
+    conditions:
+      - base~=^release-
+      - label=ready to merge
+      - -label=no-squash
     actions:
       queue:
         name: default
       label:
-        add: ["auto merged"]
+        add: ["auto merged"]  
 
-  - name: Automatically merge PRs from maintainers on CI success and review
+  - name: Automatically merge PRs from maintainers on CI success and review (no-squash)
     conditions:
       - base=main
       - label=ready to merge
-      - author=@oss-approvers
+      - label=no-squash
+      - "#approved-reviews-by>=1"
+    actions:
+      queue:
+        name: no-squash-queue
+      label:
+        add: ["auto merged"]
+
+  - name: Automatically merge PRs from maintainers on CI success and review (default squash)
+    conditions:
+      - base=main
+      - label=ready to merge
+      - -label=no-squash
       - "#approved-reviews-by>=1"
     actions:
       queue:
