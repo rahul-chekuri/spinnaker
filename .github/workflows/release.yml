@@ -20,7 +20,7 @@ jobs:
       # Given a tag, determine what branch we are on, so we can bump dependencies in the correct branch
       - name: Get Branch
         run: |
-          BRANCHES=$(git branch -r --contains ${{ github.ref }})
+          BRANCHES=$(git branch -r --contains ${{ github.ref }} | grep -v 'HEAD')
           echo "BRANCHES is '${BRANCHES}'"
           # Check for no branches explicitly...Otherwise echo adds a newline so wc thinks there's
           # one branch.  And echo -n makes it appears that there's one less branch than there
@@ -39,6 +39,9 @@ jobs:
           echo BRANCH=$BRANCHES >> $GITHUB_ENV
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+        with:
+          ## Temporary due to bug in qemu:  https://github.com/docker/setup-qemu-action/issues/198
+          image: tonistiigi/binfmt:qemu-v7.0.0-28
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - uses: actions/setup-java@v4
