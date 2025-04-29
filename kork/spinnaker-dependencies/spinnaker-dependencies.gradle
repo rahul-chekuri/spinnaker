@@ -56,7 +56,7 @@ dependencies {
   //kotlinVersion comes from gradle.properties since we have kotlin code in
   // this project and need to configure gradle plugins etc.
   api(platform(libs.kotlin.bom))
-  api(platform("org.jetbrains.kotlin:kotlin-bom:$kotlinVersion"))
+//  api(platform("org.jetbrains.kotlin:kotlin-bom:$kotlinVersion"))
   api(platform("io.zipkin.brave:brave-bom:${versions.brave}"))
   api(platform("org.springframework.boot:spring-boot-dependencies:${versions.springBoot}"))
   api(platform("com.amazonaws:aws-java-sdk-bom:${versions.aws}"))
@@ -104,7 +104,7 @@ dependencies {
     api("com.netflix.archaius:archaius-core:0.7.7")
     api("com.netflix.awsobjectmapper:awsobjectmapper:${versions.aws}")
     api("com.netflix.dyno:dyno-jedis:1.7.2")
-    api("com.netflix.eureka:eureka-client:1.10.17")
+    api("com.netflix.eureka:eureka-client")
     api("com.netflix.frigga:frigga:0.24.0")
     api("com.netflix.netflix-commons:netflix-eventbus:0.3.0")
     api("com.netflix.spectator:spectator-api:${versions.spectator}")
