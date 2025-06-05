@@ -37,6 +37,7 @@ import org.springframework.http.MediaType
 import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import retrofit2.mock.Calls
 import spock.lang.Specification
 import spock.lang.Unroll
 import io.reactivex.rxjava3.core.Observable
@@ -250,8 +251,8 @@ class TaskControllerSpec extends Specification {
       }
     })
     taskControllerConfigurationProperties.excludeExecutionsOfDisabledPipelines = excludeExecutionsOfDisabledPipelines
-    front50Service.getPipelines(app, false, taskControllerConfigurationProperties.excludeExecutionsOfDisabledPipelines ? true : null) >> front50ConfigIds
-    front50Service.getStrategies(app) >> []
+    front50Service.getPipelines(app, false, taskControllerConfigurationProperties.excludeExecutionsOfDisabledPipelines ? true : null) >> Calls.response(front50ConfigIds)
+    front50Service.getStrategies(app) >> Calls.response([])
 
     executionRepository.retrievePipelineConfigIdsForApplication(app) >> { return List.of( '2')}
 
@@ -398,7 +399,7 @@ class TaskControllerSpec extends Specification {
       }
 
 
-    front50Service.getPipelines(app, false) >> [[id: "1"]]
+    front50Service.getPipelines(app, false) >> Calls.response([[id: "1"]])
 
     when:
     def response = mockMvc.perform(get("/applications/${app}/pipelines/search")).andReturn().response
@@ -445,7 +446,7 @@ class TaskControllerSpec extends Specification {
       return pipeline
     }
 
-    front50Service.getPipelines(app, false) >> [[id: "1"]]
+    front50Service.getPipelines(app, false) >> Calls.response([[id: "1"]])
 
     when:
     def response = mockMvc.perform(get("/applications/${app}/pipelines/search?triggerTypes=docker,jenkins")).andReturn().response
@@ -495,7 +496,7 @@ class TaskControllerSpec extends Specification {
       return pipeline
     }
 
-    front50Service.getPipelines(app, false) >> [[id: "1"]]
+    front50Service.getPipelines(app, false) >> Calls.response([[id: "1"]])
 
     when:
     def response = mockMvc.perform(get("/applications/${app}/pipelines/search?eventId=" + eventId)).andReturn().response
@@ -537,8 +538,8 @@ class TaskControllerSpec extends Specification {
       return pipeline
     }
 
-    front50Service.getPipelines(app1, false) >> [[id: "1"]]
-    front50Service.getPipelines(app2, false) >> [[id: "2"]]
+    front50Service.getPipelines(app1, false) >> Calls.response([[id: "1"]])
+    front50Service.getPipelines(app2, false) >> Calls.response([[id: "2"]])
 
     when:
     def response = mockMvc.perform(get("/applications/${app1}/pipelines/search")).andReturn().response
@@ -577,7 +578,7 @@ class TaskControllerSpec extends Specification {
       return pipeline
     }
 
-    front50Service.getPipelines(app, false) >> [[id: "2", name: "pipeline2"]]
+    front50Service.getPipelines(app, false) >> Calls.response([[id: "2", name: "pipeline2"]])
 
     when:
     def response = mockMvc.perform(get("/applications/${app}/pipelines/search?pipelineName=pipeline2")).andReturn().response
@@ -615,7 +616,7 @@ class TaskControllerSpec extends Specification {
       return pipeline
     }
 
-    front50Service.getPipelines(app, false) >> [[id: "1"]]
+    front50Service.getPipelines(app, false) >> Calls.response([[id: "1"]])
 
     when:
     String encodedTriggerParams = new String(Base64.getEncoder().encode('{"account":"test-account","repository":"test-repo","tag":"1"}'.getBytes()))
@@ -653,7 +654,7 @@ class TaskControllerSpec extends Specification {
       return pipeline
     }
 
-    front50Service.getPipelines(app, false) >> [[id: "1"]]
+    front50Service.getPipelines(app, false) >> { return Calls.response([[id: "1"]]) }
 
     when:
     String encodedTriggerParams1 = new String(Base64.getEncoder().encode('{"artifacts":[{"name":"a","version":"1"},{"name":"a"}]}'.getBytes()))
@@ -698,7 +699,7 @@ class TaskControllerSpec extends Specification {
       return pipeline
     }
 
-    front50Service.getPipelines(app, false) >> [[id: "1"]]
+    front50Service.getPipelines(app, false) >> Calls.response([[id: "1"]])
 
     when:
     String encodedTriggerParams = new String(Base64.getEncoder().encode('{"payload":{"a":"1","b":"2"}}'.getBytes()))
