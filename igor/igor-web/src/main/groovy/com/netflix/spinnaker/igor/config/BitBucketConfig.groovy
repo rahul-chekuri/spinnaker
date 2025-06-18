@@ -18,9 +18,9 @@ package com.netflix.spinnaker.igor.config
 
 import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketClient
 import com.netflix.spinnaker.igor.scm.bitbucket.client.BitBucketMaster
-import com.netflix.spinnaker.igor.util.RetrofitUtils
-import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory;
-import com.netflix.spinnaker.config.OkHttp3ClientConfiguration;
+import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory
+import com.netflix.spinnaker.kork.retrofit.util.RetrofitUtils
+import com.netflix.spinnaker.config.OkHttp3ClientConfiguration
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import okhttp3.Credentials
