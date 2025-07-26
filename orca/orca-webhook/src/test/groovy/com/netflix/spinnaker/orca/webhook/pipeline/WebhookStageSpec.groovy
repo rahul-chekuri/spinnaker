@@ -23,6 +23,7 @@ import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask
+import com.netflix.spinnaker.orca.webhook.config.WebhookProperties
 import com.netflix.spinnaker.orca.webhook.tasks.CreateWebhookTask
 import com.netflix.spinnaker.orca.webhook.tasks.MonitorWebhookTask
 import groovy.json.JsonOutput
@@ -37,8 +38,10 @@ class WebhookStageSpec extends Specification {
 
   MonitorWebhookTask monitorWebhookTask = Mock()
 
+  WebhookProperties webhookProperties = new WebhookProperties()
+
   @Subject
-  webhookStage = new WebhookStage(monitorWebhookTask)
+  webhookStage = new WebhookStage(monitorWebhookTask, webhookProperties)
 
   @Unroll
   def "Should create correct tasks"() {
@@ -113,5 +116,47 @@ class WebhookStageSpec extends Specification {
     'get'        | HttpMethod.GET
     'GET'        | HttpMethod.GET
     'Get'        | HttpMethod.GET
+  }
+
+  @Unroll
+  def "requireAccount behaves as expected (requireAccount: #requireAccount, hasAccount: #hasAccount, account: #account)"() {
+    given:
+    webhookProperties.setRequireAccount(requireAccount)
+
+    Map<String, Object> stageProperties = [:]
+    if (hasAccount) {
+      stageProperties['account'] = account
+    }
+
+    def stage = new StageExecutionImpl(
+      PipelineExecutionImpl.newPipeline("orca"),
+      "webhook",
+      stageProperties)
+
+    when:
+    // thrown() fails if no exception is thrown, and isn't allowed inside a
+    // conditional, so catch any exceptions manually.
+    Exception ex = null;
+    try {
+      webhookStage.taskGraph(stage, builder)
+    } catch (Exception exception) {
+      ex = exception
+    }
+
+    then:
+    expectException ? (ex instanceof UserException) : (ex == null)
+
+    where:
+    requireAccount | hasAccount | account      | expectException
+    false          | false      | "ignored"    | false
+    false          | true       | null         | false
+    false          | true       | ""           | false
+    false          | true       | " "          | false
+    false          | true       | "my-account" | false
+    true           | false      | "ignored"    | true
+    true           | true       | null         | true
+    true           | true       | ""           | true
+    true           | true       | " "          | true
+    true           | true       | "my-account" | false
   }
 }
