@@ -21,6 +21,7 @@ ext {
     logback          : "1.4.14",
     protobuf         : "3.25.2",
     openapi          : "2.2.0",
+    okhttp3          : "4.9.3",
     retrofit2        : "2.8.1",
     spectator        : "1.0.6",
     spek             : "1.1.5",
