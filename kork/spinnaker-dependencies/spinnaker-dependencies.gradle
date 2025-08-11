@@ -22,7 +22,6 @@ ext {
     protobuf         : "3.25.2",
     openapi          : "2.2.0",
     okhttp3          : "4.9.3",
-    openapi          : "1.8.0",
     retrofit2        : "2.8.1",
     spectator        : "1.0.6",
     spek             : "1.1.5",
