@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.spinnaker.gate.filters;
+package com.netflix.spinnaker.kork.web.filters;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
