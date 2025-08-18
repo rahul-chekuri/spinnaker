@@ -35,7 +35,6 @@ dependencies {
   testImplementation 'org.mockito:mockito-core'
   testImplementation 'org.mockito:mockito-junit-jupiter'
   testImplementation 'org.junit.jupiter:junit-jupiter'
-
-    testRuntimeOnly 'net.bytebuddy:byte-buddy'
+  testRuntimeOnly 'net.bytebuddy:byte-buddy'
   testRuntimeOnly 'org.objenesis:objenesis'
 }
