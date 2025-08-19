@@ -30,7 +30,9 @@ interface IEditMetricModalDispatchProps {
   changeGroup: (event: any) => void;
   updateDirection: (event: any) => void;
   updateNanStrategy: (event: any) => void;
+  updateOutlierStrategy: (event: any) => void;
   updateCriticality: (event: any) => void;
+  updateDataRequired: (event: any) => void;
   confirm: () => void;
   cancel: () => void;
 }
@@ -57,7 +59,9 @@ function EditMetricModal({
   isTemplateValid,
   updateDirection,
   updateNanStrategy,
+  updateOutlierStrategy,
   updateCriticality,
+  updateDataRequired,
   useInlineTemplateEditor,
   disableEdit,
   validationErrors,
@@ -68,7 +72,9 @@ function EditMetricModal({
 
   const direction = metric.analysisConfigurations?.canary?.direction ?? 'either';
   const nanStrategy = metric.analysisConfigurations?.canary?.nanStrategy ?? 'default';
+  const outlierStrategy = metric.analysisConfigurations?.canary?.outliers?.strategy ?? 'default';
   const critical = metric.analysisConfigurations?.canary?.critical ?? false;
+  const dataRequired = metric.analysisConfigurations?.canary?.mustHaveData ?? false;
   const isConfirmDisabled =
     !isTemplateValid ||
     disableEdit ||
@@ -147,12 +153,26 @@ function EditMetricModal({
             <label>
               <DisableableInput
                 type="checkbox"
+                name="criticality"
                 checked={critical}
                 onChange={updateCriticality}
                 disabled={CanarySettings.disableConfigEdit}
                 disabledStateKeys={[DISABLE_EDIT_CONFIG]}
               />
               Fail the canary if this metric fails
+            </label>
+          </FormRow>
+          <FormRow label="Data Required" checkbox={true}>
+            <label>
+              <DisableableInput
+                type="checkbox"
+                name="dataRequired"
+                checked={dataRequired}
+                onChange={updateDataRequired}
+                disabled={CanarySettings.disableConfigEdit}
+                disabledStateKeys={[DISABLE_EDIT_CONFIG]}
+              />
+              Fail the metric if data is missing
             </label>
           </FormRow>
           <FormRow label="NaN Strategy" helpId="canary.config.nanStrategy">
@@ -176,6 +196,29 @@ function EditMetricModal({
               name="nanStrategy"
               current={nanStrategy}
               action={updateNanStrategy}
+            />
+          </FormRow>
+          <FormRow label="Outlier Strategy" helpId="canary.config.outlierStrategy">
+            <RadioChoice
+              value="default"
+              label="Default (keep)"
+              name="outlierStrategy"
+              current={outlierStrategy}
+              action={updateOutlierStrategy}
+            />
+            <RadioChoice
+              value="remove"
+              label="Remove"
+              name="outlierStrategy"
+              current={outlierStrategy}
+              action={updateOutlierStrategy}
+            />
+            <RadioChoice
+              value="keep"
+              label="Keep"
+              name="outlierStrategy"
+              current={outlierStrategy}
+              action={updateOutlierStrategy}
             />
           </FormRow>
           <EditMetricEffectSizes />
@@ -224,8 +267,14 @@ function mapDispatchToProps(dispatch: any): IEditMetricModalDispatchProps {
     updateNanStrategy: ({ target }: React.ChangeEvent<HTMLInputElement>) => {
       dispatch(Creators.updateMetricNanStrategy({ id: target.dataset.id, strategy: target.value }));
     },
+    updateOutlierStrategy: ({ target }: React.ChangeEvent<HTMLInputElement>) => {
+      dispatch(Creators.updateMetricOutlierStrategy({ id: target.dataset.id, strategy: target.value }));
+    },
     updateCriticality: ({ target }: React.ChangeEvent<HTMLInputElement>) => {
       dispatch(Creators.updateMetricCriticality({ id: target.dataset.id, critical: Boolean(target.checked) }));
+    },
+    updateDataRequired: ({ target }: React.ChangeEvent<HTMLInputElement>) => {
+      dispatch(Creators.updateMetricDataRequired({ id: target.dataset.id, mustHaveData: Boolean(target.checked) }));
     },
   };
 }

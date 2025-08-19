@@ -11,20 +11,20 @@
     "registry": "http://artifacts.netflix.com/api/npm/npm-local"
   },
   "engines": {
-    "node": ">=14.21.3",
-    "npm": ">=6.14.18",
+    "node": ">=20.19.4",
+    "npm": ">=10.8.2",
     "yarn": ">=1.21.1"
   },
   "private": true,
   "scripts": {
     "clean": "lerna run clean --parallel",
     "fixup": "scripts/monorepo_fixup.sh",
-    "build": "NODE_OPTIONS=--max_old_space_size=8192 webpack --bail --mode=production --config packages/app/webpack.config.js",
+    "build": "NODE_OPTIONS='--max_old_space_size=8192 --openssl-legacy-provider' webpack --bail --mode=production --config packages/app/webpack.config.js",
     "lint": "eslint --max-warnings=0 --ext js,jsx,ts,tsx packages",
     "start": "sh ./start.sh",
-    "start-dev-server": "webpack-dev-server --config packages/app/webpack.config.js --mode=development",
+    "start-dev-server": "NODE_OPTIONS=--openssl-legacy-provider webpack-dev-server --config packages/app/webpack.config.js --mode=development",
     "dev:experimental": "cd packages/app && npm run dev:experimental",
-    "test": "karma start",
+    "test": "NODE_OPTIONS=--openssl-legacy-provider karma start",
     "modules": "./scripts/buildModules.js",
     "prettier": "prettier --write 'packages/**/*.{js,jsx,ts,tsx,html,css,less}'",
     "prettier:check": "prettier --check 'packages/**/*.{js,jsx,ts,tsx,html,css,less}'",
@@ -33,12 +33,14 @@
     "storybook": "start-storybook -p 9001"
   },
   "devDependencies": {
-    "@spinnaker/eslint-plugin": "^3.0.0",
+    "@spinnaker/eslint-plugin": "^3.0.1",
     "@types/jasmine": "3.6.9",
+    "@typescript-eslint/eslint-plugin": "5.59.8",
+    "@typescript-eslint/parser": "5.59.8",
     "angular-mocks": "1.8.0",
     "babel-loader": "8.1.0",
     "enzyme-adapter-react-16": "1.15.1",
-    "eslint": "7.27.0",
+    "eslint": "7.32.0",
     "eslint-config-prettier": "6.10.0",
     "eslint-plugin-react-hooks": "2.5.0",
     "eslint-webpack-plugin": "2.5.4",
@@ -61,7 +63,7 @@
     "yargs": "^17.0.1"
   },
   "optionalDependencies": {
-    "fsevents": "1.2.11"
+    "fsevents": "2.3.2"
   },
   "resolutionsPurpose": "This temporarily chooses the right versions of these libs, which are specified in both deck AND deck-kayenta",
   "resolutions": {
@@ -74,9 +76,10 @@
     "cheerio": "=1.0.0-rc.3",
     "nth-check": "2.0.1",
     "react": "^16.14.0",
+    "@types/react": "16.14.10",
     "react-dom": "^16.14.0",
     "rxjs": "6.6.7",
-    "typescript": "4.3.5"
+    "typescript": "5.0.4"
   },
   "workspaces": [
     "packages/app",

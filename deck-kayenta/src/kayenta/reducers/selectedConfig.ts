@@ -148,12 +148,29 @@ const editingMetric = handleActions(
 
       return newState;
     },
+    [Actions.UPDATE_METRIC_OUTLIER_STRATEGY]: (state: ICanaryMetricConfig, { payload }: Action & any) => {
+      const newState = cloneDeep(state);
+
+      payload.strategy === 'default'
+        ? unset(newState, ['analysisConfigurations', 'canary', 'outliers', 'strategy'])
+        : set(newState, ['analysisConfigurations', 'canary', 'outliers', 'strategy'], payload.strategy);
+
+      return newState;
+    },
     [Actions.UPDATE_METRIC_CRITICALITY]: (state: ICanaryMetricConfig, { payload }: Action & any) => {
       const newState = cloneDeep(state);
 
       payload.critical
         ? set(newState, ['analysisConfigurations', 'canary', 'critical'], payload.critical)
         : unset(newState, ['analysisConfigurations', 'canary', 'critical']);
+
+      return newState;
+    },
+    [Actions.UPDATE_METRIC_DATA_REQUIRED]: (state: ICanaryMetricConfig, { payload }: Action & any) => {
+      const newState = cloneDeep(state);
+      payload.mustHaveData
+        ? set(newState, ['analysisConfigurations', 'canary', 'mustHaveData'], payload.mustHaveData)
+        : unset(newState, ['analysisConfigurations', 'canary', 'mustHaveData']);
 
       return newState;
     },
