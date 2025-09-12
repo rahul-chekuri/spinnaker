@@ -38,13 +38,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
@@ -75,10 +73,6 @@ public class OAuthUserInfoServiceHelper {
 
   private SpinnakerProviderTokenServices providerTokenServices;
 
-  @Autowired(required = false)
-  @Qualifier("spinnaker-oauth2-group-extractor")
-  private BiFunction<String, Map<String, Object>, List<String>> groupExtractor;
-
   private final RetrySupport retrySupport = new RetrySupport();
 
   @Autowired
@@ -98,15 +92,81 @@ public class OAuthUserInfoServiceHelper {
     this.allowedAccountsSupport = allowedAccountsSupport;
     this.fiatClientConfigurationProperties = fiatClientConfigurationProperties;
     this.registry = registry;
-
-    if (providerTokenServices.isPresent()) {
-      this.providerTokenServices = providerTokenServices.get();
-    }
+    this.providerTokenServices = providerTokenServices.orElse(null);
   }
 
-  <T extends OAuth2User> T getOAuthSpinnakerUser(T oAuth2User, OAuth2UserRequest userRequest) {
+  /**
+   * Builds a {@link SpinnakerOAuth2User} from the given {@link OAuth2User} and its {@link
+   * OAuth2UserRequest}.
+   *
+   * <p>This method extracts user identity information (email, first name, last name, username,
+   * roles) from the provider's user attributes according to the configured {@link
+   * OAuth2SsoConfig.UserInfoMapping}. It also applies account filtering through {@link
+   * AllowedAccountsSupport}, validates user info requirements, and triggers a login in Fiat to
+   * establish authorization context.
+   *
+   * @param oAuth2User the raw user object returned by the OAuth2 provider
+   * @param userRequest the associated user request, including access token and client registration
+   * @return a {@link SpinnakerOAuth2User} containing normalized user identity, roles, and allowed
+   *     accounts
+   * @throws org.springframework.security.authentication.BadCredentialsException if the user's
+   *     attributes do not meet required constraints
+   */
+  OAuth2User getSpinnakerOAuth2User(OAuth2User oAuth2User, OAuth2UserRequest userRequest) {
     Map<String, Object> details = oAuth2User.getAttributes();
 
+    ResolvedUserInfo userInfo = getUserInfo(details, userRequest);
+
+    return new SpinnakerOAuth2User(
+        Objects.toString(details.get(userInfoMapping.getEmail()), null),
+        Objects.toString(details.get(userInfoMapping.getFirstName()), null),
+        Objects.toString(details.get(userInfoMapping.getLastName()), null),
+        allowedAccountsSupport.filterAllowedAccounts(userInfo.username(), userInfo.roles()),
+        userInfo.roles(),
+        userInfo.username(),
+        details,
+        oAuth2User.getAuthorities());
+  }
+
+  /**
+   * Builds a {@link SpinnakerOIDCUser} from the given {@link OidcUser} and its {@link
+   * OAuth2UserRequest}.
+   *
+   * <p>This method extracts identity information (email, first name, last name, username, roles)
+   * from the OIDC claims and user attributes, applies account filtering through {@link
+   * AllowedAccountsSupport}, and triggers a Fiat login to establish authorization context. Unlike
+   * {@link #getSpinnakerOAuth2User}, this method also preserves the OIDC-specific {@link
+   * org.springframework.security.oauth2.core.oidc.OidcIdToken} and {@link
+   * org.springframework.security.oauth2.core.oidc.OidcUserInfo}.
+   *
+   * @param oidcUser the raw user object returned by the OIDC provider, including ID token and user
+   *     info claims
+   * @param userRequest the associated user request, including access token and client registration
+   * @return a {@link SpinnakerOIDCUser} containing normalized user identity, roles, allowed
+   *     accounts, ID token, and OIDC user info
+   * @throws org.springframework.security.authentication.BadCredentialsException if the user's
+   *     claims do not meet required constraints
+   */
+  OidcUser getSpinnakerOIDCUser(OidcUser oidcUser, OAuth2UserRequest userRequest) {
+    Map<String, Object> details = oidcUser.getAttributes();
+
+    ResolvedUserInfo userInfo = getUserInfo(details, userRequest);
+
+    return new SpinnakerOIDCUser(
+        Objects.toString(details.get(userInfoMapping.getEmail()), null),
+        Objects.toString(details.get(userInfoMapping.getFirstName()), null),
+        Objects.toString(details.get(userInfoMapping.getLastName()), null),
+        allowedAccountsSupport.filterAllowedAccounts(userInfo.username(), userInfo.roles()),
+        userInfo.roles(),
+        userInfo.username(),
+        oidcUser.getIdToken(),
+        oidcUser.getUserInfo(),
+        details,
+        oidcUser.getAuthorities());
+  }
+
+  /** Handles validation, login, and metric tracking for a given OAuth2/OIDC user. */
+  private ResolvedUserInfo getUserInfo(Map<String, Object> details, OAuth2UserRequest userRequest) {
     if (log.isDebugEnabled()) {
       log.debug("UserInfo details: " + entries(details));
     }
@@ -126,11 +186,7 @@ public class OAuthUserInfoServiceHelper {
     }
 
     final String username = Objects.toString(details.get(userInfoMapping.getUsername()), null);
-    List<String> roles =
-        Optional.ofNullable(groupExtractor)
-            .map(extractor -> extractor.apply(accessToken, details))
-            .orElseGet(
-                () -> Optional.ofNullable(getRoles(details)).orElse(Collections.emptyList()));
+    List<String> roles = Optional.ofNullable(getRoles(details)).orElse(Collections.emptyList());
     // Service accounts are already logged in.
     if (!isServiceAccount) {
       var id = registry.createId("fiat.login").withTag("type", "oauth2");
@@ -143,7 +199,7 @@ public class OAuthUserInfoServiceHelper {
               } else {
                 permissionService.loginWithRoles(username, roles);
               }
-              return "Successfully Logged in" + username;
+              return "Successfully Logged in " + username;
             },
             5,
             Duration.ofSeconds(2),
@@ -174,35 +230,11 @@ public class OAuthUserInfoServiceHelper {
       }
     }
 
-    if (oAuth2User instanceof OidcUser oidcUser) {
-      SpinnakerOIDCUser spinnakerUser =
-          new SpinnakerOIDCUser(
-              Objects.toString(details.get(userInfoMapping.getEmail()), null),
-              Objects.toString(details.get(userInfoMapping.getFirstName()), null),
-              Objects.toString(details.get(userInfoMapping.getLastName()), null),
-              allowedAccountsSupport.filterAllowedAccounts(username, roles),
-              roles,
-              username,
-              oidcUser.getIdToken(),
-              oidcUser.getUserInfo(),
-              details,
-              oidcUser.getAuthorities());
-
-      return (T) spinnakerUser;
-    } else {
-      SpinnakerOAuth2User spinnakerUser =
-          new SpinnakerOAuth2User(
-              Objects.toString(details.get(userInfoMapping.getEmail()), null),
-              Objects.toString(details.get(userInfoMapping.getFirstName()), null),
-              Objects.toString(details.get(userInfoMapping.getLastName()), null),
-              allowedAccountsSupport.filterAllowedAccounts(username, roles),
-              roles,
-              username,
-              details,
-              oAuth2User.getAuthorities());
-      return (T) spinnakerUser;
-    }
+    return new ResolvedUserInfo(username, roles);
   }
+
+  /** Holds the resolved user identity information after authentication flow. */
+  private record ResolvedUserInfo(String username, List<String> roles) {}
 
   boolean isServiceAccount(Map<String, Object> details) {
     String email = (String) details.get(userInfoMapping.getServiceAccountEmail());
