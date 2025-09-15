@@ -26,9 +26,10 @@ import jakarta.validation.Validation;
 import jakarta.validation.constraints.NotNull;
 import java.util.*;
 import java.util.stream.Collectors;
+import okhttp3.ResponseBody;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import okhttp3.ResponseBody;
+
 @Component
 public class JiraService {
   private final EchoService echoService;
