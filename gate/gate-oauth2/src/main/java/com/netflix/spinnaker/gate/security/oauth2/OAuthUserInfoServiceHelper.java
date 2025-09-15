@@ -26,6 +26,7 @@ import com.netflix.spinnaker.gate.security.AllowedAccountsSupport;
 import com.netflix.spinnaker.gate.security.oauth2.provider.SpinnakerProviderTokenServices;
 import com.netflix.spinnaker.gate.services.PermissionService;
 import com.netflix.spinnaker.gate.services.internal.Front50Service;
+import com.netflix.spinnaker.kork.annotations.VisibleForTesting;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException;
@@ -166,6 +167,7 @@ public class OAuthUserInfoServiceHelper {
   }
 
   /** Handles validation, login, and metric tracking for a given OAuth2/OIDC user. */
+  @VisibleForTesting
   ResolvedUserInfo getUserInfo(Map<String, Object> details, OAuth2UserRequest userRequest) {
     if (log.isDebugEnabled()) {
       log.debug("UserInfo details: " + entries(details));
@@ -234,6 +236,7 @@ public class OAuthUserInfoServiceHelper {
   }
 
   /** Holds the resolved user identity information after authentication flow. */
+  @VisibleForTesting
   record ResolvedUserInfo(String username, List<String> roles) {}
 
   boolean isServiceAccount(Map<String, Object> details) {
