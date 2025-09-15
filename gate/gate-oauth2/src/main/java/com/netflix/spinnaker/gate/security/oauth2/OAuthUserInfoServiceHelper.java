@@ -166,7 +166,7 @@ public class OAuthUserInfoServiceHelper {
   }
 
   /** Handles validation, login, and metric tracking for a given OAuth2/OIDC user. */
-  private ResolvedUserInfo getUserInfo(Map<String, Object> details, OAuth2UserRequest userRequest) {
+  ResolvedUserInfo getUserInfo(Map<String, Object> details, OAuth2UserRequest userRequest) {
     if (log.isDebugEnabled()) {
       log.debug("UserInfo details: " + entries(details));
     }
@@ -234,7 +234,7 @@ public class OAuthUserInfoServiceHelper {
   }
 
   /** Holds the resolved user identity information after authentication flow. */
-  private record ResolvedUserInfo(String username, List<String> roles) {}
+  record ResolvedUserInfo(String username, List<String> roles) {}
 
   boolean isServiceAccount(Map<String, Object> details) {
     String email = (String) details.get(userInfoMapping.getServiceAccountEmail());
