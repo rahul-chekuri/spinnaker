@@ -8,39 +8,53 @@ import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.ResponseDefinition;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
- * WireMock {@link com.github.tomakehurst.wiremock.extension.ResponseTransformer} that dynamically
- * injects the OAuth2 "state" query parameter from the incoming request into the redirect URL.
+ * WireMock ResponseDefinitionTransformer that builds a 302 redirect to the application callback URL
+ * while preserving and URL-encoding the incoming "state" query parameter.
  *
- * <p>This is useful for simulating an OAuth2 authorization server during testing, where the
- * authorization endpoint must redirect to a callback URL with the original "state" preserved.
+ * <p>The transformer does not require the app port at construction time. Instead it calls a {@link
+ * Supplier<Integer>} (configured by the test) to obtain the application's HTTP port at transform
+ * time. Tests should set the supplier (see example test code).
  *
- * <p><b>Note on URL encoding:</b> The "state" parameter may contain characters that need URL
- * encoding (such as '=' or '+'). This transformer ensures that the state value from the incoming
- * request is properly encoded in the redirect URL, preventing issues where Spring Security or the
- * client might decode it incorrectly.
- *
- * <p>Example usage:
+ * <p>Usage:
  *
  * <pre>
- *   WireMock.stubFor(WireMock.get("/login/oauth/authorize")
- *       .willReturn(WireMock.aResponse()
- *           .withStatus(302)
- *           .withHeader("Location", "/login/oauth2/code/github?code=fake-code&state={{request.query.state}}")
- *           .withTransformers("redirect-with-state")));
+ *   // in test setup:
+ *   RedirectWithStateTransformer.setAppPortSupplier(() -> localServerPort);
  * </pre>
- *
- * <p>This transformer ensures that the "state" parameter in the redirect matches the one sent by
- * the client, which is necessary for proper request caching and CSRF protection in Spring Security
- * OAuth2 login flows.
  */
 public class RedirectWithStateTransformer extends ResponseDefinitionTransformer {
 
-  private final int appPort;
+  /**
+   * A supplier that returns the application port. Tests MUST set this before the transformer is
+   * invoked, e.g. in {@code @BeforeEach}.
+   */
+  private static volatile Supplier<Integer> appPortSupplier = () -> -1;
 
-  public RedirectWithStateTransformer(int appPort) {
-    this.appPort = appPort;
+  /**
+   * Set the supplier that will provide the application port at transform time. Use a lambda that
+   * returns the value of @LocalServerPort.
+   *
+   * @param supplier supplier returning the app port
+   */
+  public static void setAppPortSupplier(Supplier<Integer> supplier) {
+    appPortSupplier = Objects.requireNonNull(supplier, "appPort supplier must not be null");
+  }
+
+  /** Reset supplier to default (optional cleanup). */
+  public static void resetAppPortSupplier() {
+    appPortSupplier = () -> -1;
+  }
+
+  private int getAppPortOrThrow() {
+    int port = appPortSupplier.get();
+    if (port <= 0) {
+      throw new IllegalStateException("Application port not set in RedirectWithStateTransformer");
+    }
+    return port;
   }
 
   @Override
@@ -49,16 +63,28 @@ public class RedirectWithStateTransformer extends ResponseDefinitionTransformer 
       ResponseDefinition responseDefinition,
       FileSource files,
       Parameters parameters) {
-    String state = request.queryParameter("state").firstValue();
-    if (state == null) {
-      state = "";
+
+    // Grab the first state value if present
+    String state = "";
+    if (request.queryParameter("state") != null
+        && request.queryParameter("state").firstValue() != null) {
+      state = request.queryParameter("state").firstValue();
     }
-    String encoded = URLEncoder.encode(state, StandardCharsets.UTF_8);
-    String location =
-        "http://localhost:" + appPort + "/login/oauth2/code/github?code=vcbcncnm&state=" + encoded;
+
+    // URL-encode state to preserve characters like '=' and '+'
+    String encodedState = URLEncoder.encode(state, StandardCharsets.UTF_8);
+
+    int appPort = getAppPortOrThrow();
+
+    String redirectLocation =
+        "http://localhost:"
+            + appPort
+            + "/login/oauth2/code/github?code=vcbcncnm&state="
+            + encodedState;
+
     return ResponseDefinitionBuilder.responseDefinition()
         .withStatus(302)
-        .withHeader("Location", location)
+        .withHeader("Location", redirectLocation)
         .build();
   }
 
@@ -67,7 +93,6 @@ public class RedirectWithStateTransformer extends ResponseDefinitionTransformer 
     return "redirect-with-state";
   }
 
-  // don't apply globally unless you want every response transformed
   @Override
   public boolean applyGlobally() {
     return false;

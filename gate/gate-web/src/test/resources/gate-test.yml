@@ -3,20 +3,15 @@ spring:
     oauth2:
       client:
         registration:
+          github:
+            client-id: some-client
+            client-secret: some-secret
+            scope: user,email
           userInfoMapping:
             email: email
             firstName: ''
             lastName: name
             username: login
-          github:
-            client-secret: some-secret
-            scope: user,email
-            client-id: some-client
-        provider:
-          github:
-            user-info-uri: http://localhost:9000/login/oauth/user
-            authorization-uri: http://localhost:9000/login/oauth/authorize
-            token-uri: http://localhost:9000/login/oauth/access_token
   application:
     name: gate
 

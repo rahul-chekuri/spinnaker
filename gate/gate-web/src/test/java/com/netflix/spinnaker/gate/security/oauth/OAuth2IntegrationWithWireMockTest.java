@@ -16,14 +16,14 @@
 package com.netflix.spinnaker.gate.security.oauth;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.netflix.spinnaker.gate.security.oauth.config.OAuth2TestConfiguration;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,6 +33,8 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.client.RestTemplate;
 
@@ -54,30 +56,60 @@ import org.springframework.web.client.RestTemplate;
 @Import(OAuth2TestConfiguration.class)
 public class OAuth2IntegrationWithWireMockTest {
 
-  @Autowired
-  private RestTemplate
-      restTemplate; // using restTemplate as it follows redirects which is required while testing
+  // using restTemplate as it follows redirects which is required while testing
   // the OAuth flows
+  @Autowired private RestTemplate restTemplate;
 
-  @LocalServerPort private int port;
+  @LocalServerPort private int appPort;
 
-  private WireMockServer wireMockServer;
+  private static WireMockServer wireMockServer;
 
-  @BeforeEach
-  void setupWireMock() {
+  @BeforeAll
+  static void startWiremock() {
+    // WireMock must be started BEFORE Spring context needs provider URLs.
     wireMockServer =
         new WireMockServer(
             WireMockConfiguration.options()
-                .port(9000)
-                .extensions(new RedirectWithStateTransformer(port)));
+                .dynamicPort()
+                // register extension instance (no app port needed at construction)
+                .extensions(new RedirectWithStateTransformer()));
     wireMockServer.start();
+  }
 
-    // Stub authorize endpoint → redirect to the app’s real port
+  @AfterAll
+  static void stopWiremock() {
+    if (wireMockServer != null) {
+      wireMockServer.stop();
+    }
+    RedirectWithStateTransformer.resetAppPortSupplier();
+  }
+
+  // Provide WireMock URLs into Spring properties before context initialization uses them
+  @DynamicPropertySource
+  static void dynamicProperties(DynamicPropertyRegistry registry) {
+    String base = "http://localhost:" + wireMockServer.port();
+    registry.add(
+        "spring.security.oauth2.client.provider.github.authorization-uri",
+        () -> base + "/login/oauth/authorize");
+    registry.add(
+        "spring.security.oauth2.client.provider.github.token-uri",
+        () -> base + "/login/oauth/access_token");
+    registry.add(
+        "spring.security.oauth2.client.provider.github.user-info-uri",
+        () -> base + "/login/oauth/user");
+  }
+
+  @Test
+  void whenOAuth2UserInfoHasNullsThenAuthenticationSucceeds() {
+    // Now appPort (@LocalServerPort) is available — set the supplier so transformer can use it
+    RedirectWithStateTransformer.setAppPortSupplier(() -> appPort);
+
+    wireMockServer.resetAll();
+
     wireMockServer.stubFor(
         WireMock.get(urlPathEqualTo("/login/oauth/authorize"))
             .willReturn(WireMock.aResponse().withTransformers("redirect-with-state")));
 
-    // Stub user endpoint
     wireMockServer.stubFor(
         WireMock.get(urlPathEqualTo("/login/oauth/user"))
             .willReturn(
@@ -93,29 +125,21 @@ public class OAuth2IntegrationWithWireMockTest {
                   "id": null
                 }
                 """)));
-  }
-
-  @AfterEach
-  void tearDownWireMock() {
-    if (wireMockServer != null) {
-      wireMockServer.stop();
-    }
-  }
-
-  @Test
-  void whenOAuth2UserInfoHasNullsThenAuthenticationSucceeds() {
     HttpHeaders headers = new HttpHeaders();
     headers.set(
         HttpHeaders.ACCEPT,
-        "text/html"); // pretend it’s a browser otherwise request won't be saved to replay after
-    // authentication
+        "text/html"); // simulate browser otherwise request will not be cached to replay after
+    // Authentication
 
     HttpEntity<Void> request = new HttpEntity<>(headers);
 
     ResponseEntity<String> response =
         restTemplate.exchange(
-            "http://localhost:" + port + "/testOAuth2Api", HttpMethod.GET, request, String.class);
+            "http://localhost:" + appPort + "/testOAuth2Api",
+            HttpMethod.GET,
+            request,
+            String.class);
 
-    Assertions.assertThat(response.getBody()).isEqualTo("authenticated");
+    assertThat(response.getBody()).isEqualTo("authenticated");
   }
 }
